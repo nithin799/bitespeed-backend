@@ -1,34 +1,58 @@
 # Bitespeed Backend Task: Identity Reconciliation
 
-A web service that identifies and consolidates customer contact information across multiple purchases. Built as part of the Bitespeed Backend Engineering assignment.
+![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7.4-2D3748?logo=prisma&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white)
+
+A web service that identifies and consolidates customer contact information across multiple purchases. Built for the **Bitespeed Backend Engineering Task**.
+
+---
 
 ## Live Endpoint
 
 > **`<YOUR_HOSTED_URL>/identify`**
 
-_(Replace with actual hosted URL after deployment)_
+_(Will be updated after deployment)_
 
-## Tech Stack
+---
 
-- **Runtime:** Node.js with TypeScript
-- **Framework:** Express.js
-- **ORM:** Prisma (v7)
-- **Database:** SQLite (via LibSQL adapter)
+## How It Works
+
+```
+Customer makes a purchase         POST /identify
+with email & phone        --->    { email, phoneNumber }
+                                         |
+                                         v
+                              +---------------------+
+                              |  Match in database?  |
+                              +---------------------+
+                               /         |          \
+                              v          v           v
+                          No match   Partial match   Bridges two
+                              |          |           separate contacts
+                              v          v           v
+                        Create new   Create new     Merge clusters:
+                        PRIMARY      SECONDARY      older = primary
+                        contact      linked to      newer = secondary
+                                     primary
+```
+
+---
 
 ## API Specification
 
 ### `POST /identify`
 
-Accepts a JSON body with at least one of `email` or `phoneNumber`:
+**Request Body** (JSON):
 
-```json
-{
-  "email": "example@domain.com",
-  "phoneNumber": "1234567890"
-}
-```
+| Field | Type | Required |
+|-------|------|----------|
+| `email` | `string` | At least one required |
+| `phoneNumber` | `string \| number` | At least one required |
 
-**Response (200 OK):**
+**Response** (200 OK):
 
 ```json
 {
@@ -36,84 +60,197 @@ Accepts a JSON body with at least one of `email` or `phoneNumber`:
     "primaryContatctId": 1,
     "emails": ["primary@example.com", "secondary@example.com"],
     "phoneNumbers": ["1234567890"],
-    "secondaryContactIds": [2, 3]
+    "secondaryContactIds": [23]
   }
 }
 ```
 
-### How It Works
+---
 
-1. **New customer:** If no existing contact matches, a new primary contact is created.
-2. **Existing customer, new info:** If the email or phone matches an existing contact but contains new information, a secondary contact is created and linked to the primary.
-3. **Merging contacts:** If the request links two previously separate primary contacts, the older one remains primary and the newer one is demoted to secondary.
+## Example Scenarios
+
+### 1. New Customer
+
+```bash
+# Request
+curl -X POST http://localhost:3000/identify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "lorraine@hillvalley.edu", "phoneNumber": "123456"}'
+```
+
+```json
+{
+  "contact": {
+    "primaryContatctId": 1,
+    "emails": ["lorraine@hillvalley.edu"],
+    "phoneNumbers": ["123456"],
+    "secondaryContactIds": []
+  }
+}
+```
+
+### 2. Existing Customer, New Email
+
+Same phone `123456`, but different email `mcfly@hillvalley.edu`:
+
+```bash
+curl -X POST http://localhost:3000/identify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "mcfly@hillvalley.edu", "phoneNumber": "123456"}'
+```
+
+```json
+{
+  "contact": {
+    "primaryContatctId": 1,
+    "emails": ["lorraine@hillvalley.edu", "mcfly@hillvalley.edu"],
+    "phoneNumbers": ["123456"],
+    "secondaryContactIds": [23]
+  }
+}
+```
+
+> A secondary contact is created and linked to the primary.
+
+### 3. Primary Turns Into Secondary
+
+Two separate contacts exist:
+- George: `george@hillvalley.edu` / `919191` (primary, id: 11)
+- Biff: `biffsucks@hillvalley.edu` / `717171` (primary, id: 27)
+
+A request bridges them:
+
+```bash
+curl -X POST http://localhost:3000/identify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "george@hillvalley.edu", "phoneNumber": "717171"}'
+```
+
+```json
+{
+  "contact": {
+    "primaryContatctId": 11,
+    "emails": ["george@hillvalley.edu", "biffsucks@hillvalley.edu"],
+    "phoneNumbers": ["919191", "717171"],
+    "secondaryContactIds": [27]
+  }
+}
+```
+
+> The older contact (id: 11) stays **primary**. The newer one (id: 27) is **demoted to secondary**.
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **Node.js** | Runtime environment |
+| **TypeScript** | Type-safe development |
+| **Express v5** | HTTP framework |
+| **Prisma v7** | ORM & database toolkit |
+| **SQLite (LibSQL)** | Lightweight relational database |
+| **CORS** | Cross-origin request support |
+| **dotenv** | Environment configuration |
+
+---
+
+## Project Structure
+
+```
+bitespeed-backend/
+  src/
+    index.ts              # Express server + health check
+    db.ts                 # Prisma client with LibSQL adapter
+    routes/
+      identify.ts         # POST /identify - core reconciliation logic
+  prisma/
+    schema.prisma         # Contact model definition
+  .env.example            # Environment variable template
+  tsconfig.json           # TypeScript configuration
+  package.json            # Dependencies & scripts
+```
+
+---
+
+## Database Schema
+
+```sql
+Contact {
+  id              Int       @id @default(autoincrement())
+  phoneNumber     String?
+  email           String?
+  linkedId        Int?      -- references another Contact's id
+  linkPrecedence  String    -- "primary" | "secondary"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? -- soft delete support
+}
+```
+
+---
 
 ## Setup & Run Locally
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js v18 or higher
 - npm
 
-### Installation
+### Quick Start
 
 ```bash
+# Clone the repository
 git clone <repo-url>
 cd bitespeed-backend
+
+# Install dependencies (auto-generates Prisma client)
 npm install
-```
 
-### Configure Environment
+# Set up environment
+cp .env.example .env
 
-Create a `.env` file in the root:
-
-```
-DATABASE_URL="file:./dev.db"
-```
-
-### Initialize Database
-
-```bash
+# Initialize database
 npx prisma db push
-```
 
-### Run Development Server
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Server starts at `http://localhost:3000`.
+Server runs at **http://localhost:3000**
 
-### Build & Run Production
+### Production Build
 
 ```bash
 npm run build
 npm start
 ```
 
-## Project Structure
+### Available Scripts
 
-```
-src/
-  index.ts              # Express server entry point
-  db.ts                 # Prisma client configuration
-  routes/
-    identify.ts         # /identify endpoint logic
-prisma/
-  schema.prisma         # Database schema
-```
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start dev server with hot reload |
+| `npm run build` | Compile TypeScript + generate Prisma |
+| `npm start` | Run production build |
+| `npm run db:push` | Push schema to database |
+| `npm run db:generate` | Regenerate Prisma client |
 
-## Database Schema
+---
 
-```
-Contact {
-  id              Int       @id @default(autoincrement())
-  phoneNumber     String?
-  email           String?
-  linkedId        Int?
-  linkPrecedence  String    // "primary" | "secondary"
-  createdAt       DateTime
-  updatedAt       DateTime
-  deletedAt       DateTime?
-}
-```
+## Error Handling
+
+| Status | Condition | Response |
+|--------|-----------|----------|
+| `400` | Missing email and phone | `{"error": "email or phoneNumber is required"}` |
+| `400` | Invalid email format | `{"error": "invalid email format"}` |
+| `500` | Database/server error | `{"error": "Internal server error"}` |
+
+---
+
+## Design Decisions
+
+- **SQLite with LibSQL adapter** - Lightweight, zero-config database ideal for this service. LibSQL adapter makes it compatible with Turso for cloud deployment.
+- **Soft deletes** - `deletedAt` field allows contact recovery without permanent data loss.
+- **Oldest-wins strategy** - When merging two primary contacts, the one created first is preserved as primary, ensuring deterministic behavior.
+- **Number-to-string coercion** - `phoneNumber` accepts both `string` and `number` types per the task specification, automatically converting to string for storage.
