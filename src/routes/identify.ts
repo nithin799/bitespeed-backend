@@ -5,10 +5,14 @@ import type { Contact } from "../generated/prisma/client";
 const router = Router();
 
 router.post("/", async (req: Request, res: Response) => {
-  const { email, phoneNumber } = req.body as {
+  const { email, phoneNumber: rawPhone } = req.body as {
     email?: string | null;
-    phoneNumber?: string | null;
+    phoneNumber?: string | number | null;
   };
+
+  // Convert phoneNumber to string if sent as a number (spec allows number type)
+  const phoneNumber =
+    rawPhone !== undefined && rawPhone !== null ? String(rawPhone) : rawPhone;
 
   if (!email && !phoneNumber) {
     res.status(400).json({ error: "email or phoneNumber is required" });
@@ -16,18 +20,10 @@ router.post("/", async (req: Request, res: Response) => {
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\+?[0-9]{5,15}$/;
 
   if (email !== undefined && email !== null) {
     if (typeof email !== "string" || email.trim() === "" || !emailRegex.test(email)) {
       res.status(400).json({ error: "invalid email format" });
-      return;
-    }
-  }
-
-  if (phoneNumber !== undefined && phoneNumber !== null) {
-    if (typeof phoneNumber !== "string" || phoneNumber.trim() === "" || !phoneRegex.test(phoneNumber)) {
-      res.status(400).json({ error: "invalid phoneNumber format (digits only, 5-15 chars, optional leading +)" });
       return;
     }
   }
