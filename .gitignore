@@ -1,0 +1,20 @@
+node_modules
+dist
+
+# Environment variables
+.env
+
+# Database
+*.db
+
+# Generated Prisma client
+src/generated
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
