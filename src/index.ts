@@ -2,8 +2,10 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
 import identifyRouter from "./routes/identify";
 import prisma from "./db";
+import swaggerSpec from "./swagger";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -16,12 +18,18 @@ app.get("/", (_req, res) => {
   res.json({
     service: "Bitespeed Identity Reconciliation",
     status: "healthy",
+    docs: "/api-docs",
     endpoint: "POST /identify",
     payload: { email: "string (optional)", phoneNumber: "string (optional)" },
   });
 });
 
 app.use("/identify", identifyRouter);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "Bitespeed API Docs",
+  swaggerOptions: { defaultModelsExpandDepth: -1 },
+}));
 
 app.get("/contacts", async (_req, res) => {
   try {

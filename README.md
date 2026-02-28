@@ -6,6 +6,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-7.4-2D3748?logo=prisma&logoColor=white)](https://prisma.io)
 [![SQLite](https://img.shields.io/badge/SQLite-LibSQL-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![Tests](https://img.shields.io/badge/Tests-16%20passing-brightgreen?logo=jest)](./tests/identify.test.ts)
+[![Swagger](https://img.shields.io/badge/Swagger-UI-85EA2D?logo=swagger&logoColor=black)](https://bitespeed-backend-xpj2.onrender.com/api-docs)
 [![Live](https://img.shields.io/badge/Live-Render-46E3B7?logo=render&logoColor=white)](https://bitespeed-backend-xpj2.onrender.com)
 
 > A REST service that links a customer's multiple contact records (different emails/phones used across purchases) into a single consolidated identity.
@@ -18,6 +19,7 @@
 |--------|----------|-------------|
 | `POST` | [`/identify`](https://bitespeed-backend-xpj2.onrender.com/identify) | Reconcile contact identity |
 | `GET`  | [`/contacts`](https://bitespeed-backend-xpj2.onrender.com/contacts) | View all stored contacts |
+| `GET`  | [`/api-docs`](https://bitespeed-backend-xpj2.onrender.com/api-docs) | Interactive Swagger UI |
 | `GET`  | [`/`](https://bitespeed-backend-xpj2.onrender.com/) | Health check |
 
 ---
