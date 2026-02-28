@@ -5,14 +5,17 @@ import type { Contact } from "../generated/prisma/client";
 const router = Router();
 
 router.post("/", async (req: Request, res: Response) => {
-  const { email, phoneNumber: rawPhone } = req.body as {
+  const { email: rawEmail, phoneNumber: rawPhone } = req.body as {
     email?: string | null;
     phoneNumber?: string | number | null;
   };
 
-  // Convert phoneNumber to string if sent as a number (spec allows number type)
+  // Trim email whitespace
+  const email = typeof rawEmail === "string" ? rawEmail.trim() : rawEmail;
+
+  // Convert phoneNumber to string if sent as a number (spec allows number type), then trim
   const phoneNumber =
-    rawPhone !== undefined && rawPhone !== null ? String(rawPhone) : rawPhone;
+    rawPhone !== undefined && rawPhone !== null ? String(rawPhone).trim() : rawPhone;
 
   if (!email && !phoneNumber) {
     res.status(400).json({ error: "email or phoneNumber is required" });
