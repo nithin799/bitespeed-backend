@@ -10,11 +10,13 @@ A web service that identifies and consolidates customer contact information acro
 
 ---
 
-## Live Endpoint
+## Live Endpoints
 
-> **`<YOUR_HOSTED_URL>/identify`**
-
-_(Will be updated after deployment)_
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| **`https://bitespeed-backend-xpj2.onrender.com/identify`** | `POST` | Identity reconciliation |
+| **`https://bitespeed-backend-xpj2.onrender.com/contacts`** | `GET` | View all stored contacts |
+| **`https://bitespeed-backend-xpj2.onrender.com/`** | `GET` | Health check |
 
 ---
 
@@ -73,7 +75,7 @@ with email & phone        --->    { email, phoneNumber }
 
 ```bash
 # Request
-curl -X POST http://localhost:3000/identify \
+curl -X POST https://bitespeed-backend-xpj2.onrender.com/identify \
   -H "Content-Type: application/json" \
   -d '{"email": "lorraine@hillvalley.edu", "phoneNumber": "123456"}'
 ```
@@ -94,7 +96,7 @@ curl -X POST http://localhost:3000/identify \
 Same phone `123456`, but different email `mcfly@hillvalley.edu`:
 
 ```bash
-curl -X POST http://localhost:3000/identify \
+curl -X POST https://bitespeed-backend-xpj2.onrender.com/identify \
   -H "Content-Type: application/json" \
   -d '{"email": "mcfly@hillvalley.edu", "phoneNumber": "123456"}'
 ```
@@ -121,7 +123,7 @@ Two separate contacts exist:
 A request bridges them:
 
 ```bash
-curl -X POST http://localhost:3000/identify \
+curl -X POST https://bitespeed-backend-xpj2.onrender.com/identify \
   -H "Content-Type: application/json" \
   -d '{"email": "george@hillvalley.edu", "phoneNumber": "717171"}'
 ```
